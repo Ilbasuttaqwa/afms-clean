@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("user")
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Branch {
+  id          Int       @id @default(autoincrement())
+  name        String
+  address     String?
+  phone       String?
+  status      String    @default("active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  employees   Employee[]
+  
+  @@map("branches")
+}
+
+model Position {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  baseSalary  Float
+  allowance   Float?
+  status      String    @default("active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  employees   Employee[]
+  
+  @@map("positions")
+}
+
+model Employee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  phone      String?
+  address    String?
+  joinDate   DateTime
+  status     String   @default("active")
+  branchId   Int
+  positionId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  position   Position @relation(fields: [positionId], references: [id])
+  attendances FingerprintAttendance[]
+  
+  @@map("employees")
+}
+
+model FingerprintDevice {
+  id          Int      @id @default(autoincrement())
+  name        String
+  serialNumber String  @unique
+  location    String?
+  status      String   @default("active")
+  lastSync    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  attendances FingerprintAttendance[]
+  
+  @@map("fingerprint_devices")
+}
+
+model FingerprintAttendance {
+  id        Int      @id @default(autoincrement())
+  employeeId Int
+  deviceId   Int
+  timestamp  DateTime
+  type       String  // "in" or "out"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  employee  Employee @relation(fields: [employeeId], references: [id])
+  device    FingerprintDevice @relation(fields: [deviceId], references: [id])
+  
+  @@map("fingerprint_attendances")
+}
+
+model AttendanceRule {
+  id          Int      @id @default(autoincrement())
+  name        String
+  startTime   String
+  endTime     String
+  lateThreshold String?
+  earlyLeaveThreshold String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("attendance_rules")
+}

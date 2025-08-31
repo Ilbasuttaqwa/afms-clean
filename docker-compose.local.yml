@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: afms_mysql_local
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: afms_local
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: afms_user
+      MYSQL_PASSWORD: afms123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - afms_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: afms_redis_local
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - afms_network
+
+  # Laravel API
+  laravel-api:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile.local
+    container_name: afms_laravel_local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./laravel:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=afms_local
+      - DB_USERNAME=afms_user
+      - DB_PASSWORD=afms123
+      - REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - afms_network
+
+  # Next.js Frontend
+  nextjs:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile.local
+    container_name: afms_nextjs_local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nextjs:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXTAUTH_SECRET=your-nextauth-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - laravel-api
+    networks:
+      - afms_network
+
+volumes:
+  mysql_data:
+
+networks:
+  afms_network:
+    driver: bridge

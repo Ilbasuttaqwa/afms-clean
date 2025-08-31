@@ -1,19 +1,15 @@
-version: '3.8'
-
 services:
-  # Database - MySQL
   mysql:
     image: mysql:8.0
     container_name: afms_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-afms_root_password_2024}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-afms_prod_db}
-      MYSQL_USER: ${MYSQL_USER:-afms_prod_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-afms_secure_password_2024}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-strongpassword123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-afms_db}
+      MYSQL_USER: ${MYSQL_USER:-afms_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-strongpassword123}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database/schema:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     networks:
@@ -23,16 +19,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: afms_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-afms_redis_password_2024}
-    volumes:
-      - redis_data:/data
     ports:
       - "6379:6379"
     networks:
@@ -42,75 +33,37 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
 
-  # Laravel API Backend
   laravel-api:
     build:
-      context: ./laravel-api
-      dockerfile: Dockerfile.prod
+      context: ./laravel
+      dockerfile: Dockerfile
+      args:
+        - APP_ENV=production
     container_name: afms_laravel_api
     restart: unless-stopped
     environment:
-      - APP_NAME=${APP_NAME:-"AFMS Fingerprint System"}
+      - APP_NAME=${APP_NAME:-AFMS}
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY:-base64:your_laravel_app_key_here}
       - APP_DEBUG=${APP_DEBUG:-false}
-      - APP_URL=${APP_URL:-https://api.cvtigaputraperkasa.id}
+      - APP_URL=${APP_URL:-https://cvtigaputraperkasa.id}
       - DB_CONNECTION=mysql
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_DATABASE=${DB_DATABASE:-afms_prod_db}
-      - DB_USERNAME=${DB_USERNAME:-afms_prod_user}
-      - DB_PASSWORD=${DB_PASSWORD:-afms_secure_password_2024}
+      - DB_DATABASE=${DB_DATABASE:-afms_db}
+      - DB_USERNAME=${DB_USERNAME:-afms_user}
+      - DB_PASSWORD=${DB_PASSWORD:-strongpassword123}
       - REDIS_HOST=redis
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-afms_redis_password_2024}
       - REDIS_PORT=6379
-      - CACHE_DRIVER=redis
-      - SESSION_DRIVER=redis
-      - QUEUE_CONNECTION=redis
-      - BROADCAST_DRIVER=redis
       - SESSION_DOMAIN=${SESSION_DOMAIN:-.cvtigaputraperkasa.id}
-      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS:-cvtigaputraperkasa.id,www.cvtigaputraperkasa.id,api.cvtigaputraperkasa.id}
-      - SESSION_SECURE_COOKIE=${SESSION_SECURE_COOKIE:-true}
-      - SESSION_SAME_SITE=${SESSION_SAME_SITE:-lax}
-      - SESSION_LIFETIME=${SESSION_LIFETIME:-120}
-      - FRONTEND_URL=${FRONTEND_URL:-https://cvtigaputraperkasa.id}
-      - JWT_SECRET=${JWT_SECRET:-afms_jwt_secret_2024_secure_key}
-      - JWT_TTL=${JWT_TTL:-60}
-      - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-20160}
-      - MAIL_MAILER=smtp
-      - MAIL_HOST=${MAIL_HOST:-mail.cvtigaputraperkasa.id}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USERNAME=${MAIL_USERNAME:-noreply@cvtigaputraperkasa.id}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-your_smtp_password}
-      - MAIL_ENCRYPTION=tls
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@cvtigaputraperkasa.id}
-      - MAIL_FROM_NAME=${APP_NAME:-"AFMS Fingerprint System"}
-      - FINGERPRINT_TIMEOUT=${FINGERPRINT_TIMEOUT:-30}
-      - FINGERPRINT_RETRY_ATTEMPTS=${FINGERPRINT_RETRY_ATTEMPTS:-3}
-      - LOG_CHANNEL=stack
-      - LOG_DEPRECATIONS_CHANNEL=null
-      - LOG_LEVEL=error
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS:-cvtigaputraperkasa.id,www.cvtigaputraperkasa.id}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://cvtigaputraperkasa.id,https://www.cvtigaputraperkasa.id}
-      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
-      - CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-CSRF-Token
-      - CORS_EXPOSED_HEADERS=
-      - CORS_MAX_AGE=86400
       - CORS_SUPPORTS_CREDENTIALS=true
-      - QUEUE_FAILED_DRIVER=database-uuids
-      - HORIZON_PREFIX=afms_horizon
-      - PUSHER_APP_ID=${PUSHER_APP_ID:-your_pusher_app_id}
-      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-your_pusher_app_key}
-      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-your_pusher_app_secret}
-      - PUSHER_HOST=
-      - PUSHER_PORT=443
-      - PUSHER_SCHEME=https
-      - PUSHER_APP_CLUSTER=mt1
     volumes:
-      - ./laravel-api:/var/www/html
-      - ./laravel-api/storage:/var/www/html/storage
-      - ./laravel-api/bootstrap/cache:/var/www/html/bootstrap/cache
+      - ./laravel:/var/www/html
+      - ./laravel/storage:/var/www/html/storage
+      - ./laravel/bootstrap/cache:/var/www/html/bootstrap/cache
     ports:
       - "8000:8000"
     depends_on:
@@ -120,239 +73,31 @@ services:
         condition: service_healthy
     networks:
       - afms_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
-  # Next.js Frontend
   nextjs:
     build:
-      context: .
-      dockerfile: Dockerfile.nextjs.prod
+      context: ./nextjs
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
     container_name: afms_nextjs
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.cvtigaputraperkasa.id}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://cvtigaputraperkasa.id/api}
       - NEXT_PUBLIC_FRONTEND_URL=${NEXT_PUBLIC_FRONTEND_URL:-https://cvtigaputraperkasa.id}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-nextauth-secret-key-here}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-https://cvtigaputraperkasa.id}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-afms-nextauth-production-secret-2024-secure-key-abc123}
-      - JWT_SECRET=${JWT_SECRET:-afms-production-jwt-secret-key-2024-ultra-secure-random-string-xyz789}
-      - NEXT_PUBLIC_FINGERPRINT_ENABLED=true
-      - NEXT_PUBLIC_FINGERPRINT_REALTIME=true
-      - NEXT_PUBLIC_LARAVEL_API_URL=${NEXT_PUBLIC_API_URL:-https://api.cvtigaputraperkasa.id}
-      - FINGERPRINT_DEVICE_TYPE=solution-type-100c
-      - FINGERPRINT_CLOUD_ADMS_SERVER=${NEXT_PUBLIC_API_URL:-https://api.cvtigaputraperkasa.id}/api/fingerprint
-      - DEVICE_REGISTRATION_KEY=afms-device-key-production-2024
-      - CLOUD_SERVER_URL=${NEXT_PUBLIC_API_URL:-https://api.cvtigaputraperkasa.id}
-      - CLOUD_API_KEY=afms-cloud-api-key-production
-      - SYNC_INTERVAL=300
-      - RETRY_ATTEMPTS=3
-      - TIMEOUT=30000
-      - LOG_LEVEL=info
-      - SECURE_COOKIES=true
-      - SAME_SITE_COOKIES=lax
-      - HTTPS_ONLY=true
-    depends_on:
-      laravel-api:
-        condition: service_healthy
-    networks:
-      - afms_network
-    volumes:
-      - ./prisma:/app/prisma
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Queue Worker
-  queue-worker:
-    build:
-      context: ./laravel-api
-      dockerfile: Dockerfile.prod
-    container_name: afms_queue_worker
-    restart: unless-stopped
-    command: php artisan queue:work
-    environment:
-      - APP_NAME=${APP_NAME:-"AFMS Fingerprint System"}
-      - APP_ENV=${APP_ENV:-production}
-      - APP_KEY=${APP_KEY:-base64:your_laravel_app_key_here}
-      - APP_DEBUG=${APP_DEBUG:-false}
-      - APP_URL=${APP_URL:-https://api.cvtigaputraperkasa.id}
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=${DB_DATABASE:-afms_prod_db}
-      - DB_USERNAME=${DB_USERNAME:-afms_prod_user}
-      - DB_PASSWORD=${DB_PASSWORD:-afms_secure_password_2024}
-      - REDIS_HOST=redis
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-afms_redis_password_2024}
-      - REDIS_PORT=6379
-      - CACHE_DRIVER=redis
-      - SESSION_DRIVER=redis
-      - QUEUE_CONNECTION=redis
-      - BROADCAST_DRIVER=redis
-      - SESSION_DOMAIN=${SESSION_DOMAIN:-.cvtigaputraperkasa.id}
-      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS:-cvtigaputraperkasa.id,www.cvtigaputraperkasa.id,api.cvtigaputraperkasa.id}
-      - SESSION_SECURE_COOKIE=${SESSION_SECURE_COOKIE:-true}
-      - SESSION_SAME_SITE=${SESSION_SAME_SITE:-lax}
-      - SESSION_LIFETIME=${SESSION_LIFETIME:-120}
-      - FRONTEND_URL=${FRONTEND_URL:-https://cvtigaputraperkasa.id}
-      - JWT_SECRET=${JWT_SECRET:-afms_jwt_secret_2024_secure_key}
-      - JWT_TTL=${JWT_TTL:-60}
-      - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-20160}
-      - MAIL_MAILER=smtp
-      - MAIL_HOST=${MAIL_HOST:-mail.cvtigaputraperkasa.id}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USERNAME=${MAIL_USERNAME:-noreply@cvtigaputraperkasa.id}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-your_smtp_password}
-      - MAIL_ENCRYPTION=tls
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@cvtigaputraperkasa.id}
-      - MAIL_FROM_NAME=${APP_NAME:-"AFMS Fingerprint System"}
-      - FINGERPRINT_TIMEOUT=${FINGERPRINT_TIMEOUT:-30}
-      - FINGERPRINT_RETRY_ATTEMPTS=${FINGERPRINT_RETRY_ATTEMPTS:-3}
-      - LOG_CHANNEL=stack
-      - LOG_DEPRECATIONS_CHANNEL=null
-      - LOG_LEVEL=error
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://cvtigaputraperkasa.id,https://www.cvtigaputraperkasa.id}
-      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
-      - CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-CSRF-Token
-      - CORS_EXPOSED_HEADERS=
-      - CORS_MAX_AGE=86400
-      - CORS_SUPPORTS_CREDENTIALS=true
-      - QUEUE_FAILED_DRIVER=database-uuids
-      - HORIZON_PREFIX=afms_horizon
-      - PUSHER_APP_ID=${PUSHER_APP_ID:-your_pusher_app_id}
-      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-your_pusher_app_key}
-      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-your_pusher_app_secret}
-      - PUSHER_HOST=
-      - PUSHER_PORT=443
-      - PUSHER_SCHEME=https
-      - PUSHER_APP_CLUSTER=mt1
-    volumes:
-      - ./laravel-api:/var/www/html
-      - ./laravel-api/storage:/var/www/html/storage
-      - ./laravel-api/bootstrap/cache:/var/www/html/bootstrap/cache
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - afms_network
-
-  # Horizon Dashboard
-  horizon:
-    build:
-      context: ./laravel-api
-      dockerfile: Dockerfile.prod
-    container_name: afms_horizon
-    restart: unless-stopped
-    command: php artisan horizon
-    environment:
-      - APP_NAME=${APP_NAME:-"AFMS Fingerprint System"}
-      - APP_ENV=${APP_ENV:-production}
-      - APP_KEY=${APP_KEY:-base64:your_laravel_app_key_here}
-      - APP_DEBUG=${APP_DEBUG:-false}
-      - APP_URL=${APP_URL:-https://api.cvtigaputraperkasa.id}
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=${DB_DATABASE:-afms_prod_db}
-      - DB_USERNAME=${DB_USERNAME:-afms_prod_user}
-      - DB_PASSWORD=${DB_PASSWORD:-afms_secure_password_2024}
-      - REDIS_HOST=redis
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-afms_redis_password_2024}
-      - REDIS_PORT=6379
-      - CACHE_DRIVER=redis
-      - SESSION_DRIVER=redis
-      - QUEUE_CONNECTION=redis
-      - BROADCAST_DRIVER=redis
-      - SESSION_DOMAIN=${SESSION_DOMAIN:-.cvtigaputraperkasa.id}
-      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS:-cvtigaputraperkasa.id,www.cvtigaputraperkasa.id,api.cvtigaputraperkasa.id}
-      - SESSION_SECURE_COOKIE=${SESSION_SECURE_COOKIE:-true}
-      - SESSION_SAME_SITE=${SESSION_SAME_SITE:-lax}
-      - SESSION_LIFETIME=${SESSION_LIFETIME:-120}
-      - FRONTEND_URL=${FRONTEND_URL:-https://cvtigaputraperkasa.id}
-      - JWT_SECRET=${JWT_SECRET:-afms_jwt_secret_2024_secure_key}
-      - JWT_TTL=${JWT_TTL:-60}
-      - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-20160}
-      - MAIL_MAILER=smtp
-      - MAIL_HOST=${MAIL_HOST:-mail.cvtigaputraperkasa.id}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USERNAME=${MAIL_USERNAME:-noreply@cvtigaputraperkasa.id}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-your_smtp_password}
-      - MAIL_ENCRYPTION=tls
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@cvtigaputraperkasa.id}
-      - MAIL_FROM_NAME=${APP_NAME:-"AFMS Fingerprint System"}
-      - FINGERPRINT_TIMEOUT=${FINGERPRINT_TIMEOUT:-30}
-      - FINGERPRINT_RETRY_ATTEMPTS=${FINGERPRINT_RETRY_ATTEMPTS:-3}
-      - LOG_CHANNEL=stack
-      - LOG_DEPRECATIONS_CHANNEL=null
-      - LOG_LEVEL=error
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://cvtigaputraperkasa.id,https://www.cvtigaputraperkasa.id}
-      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
-      - CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-CSRF-Token
-      - CORS_EXPOSED_HEADERS=
-      - CORS_MAX_AGE=86400
-      - CORS_SUPPORTS_CREDENTIALS=true
-      - QUEUE_FAILED_DRIVER=database-uuids
-      - HORIZON_PREFIX=afms_horizon
-      - PUSHER_APP_ID=${PUSHER_APP_ID:-your_pusher_app_id}
-      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-your_pusher_app_key}
-      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-your_pusher_app_secret}
-      - PUSHER_HOST=
-      - PUSHER_PORT=443
-      - PUSHER_SCHEME=https
-      - PUSHER_APP_CLUSTER=mt1
-    volumes:
-      - ./laravel-api:/var/www/html
-      - ./laravel-api/storage:/var/www/html/storage
-      - ./laravel-api/bootstrap/cache:/var/www/html/bootstrap/cache
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - afms_network
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: afms_nginx
-    restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
+      - "3000:3000"
     depends_on:
-      - nextjs
       - laravel-api
     networks:
       - afms_network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
 networks:
   afms_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
 
 volumes:
   mysql_data:
-  redis_data:
