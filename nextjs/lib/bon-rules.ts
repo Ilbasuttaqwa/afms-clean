@@ -128,3 +128,49 @@ export function calculateTotalInterest(
   const monthlyInterest = rules.interest_rate / 12;
   return bonAmount * monthlyInterest * period;
 }
+
+export function validateBonApplication(
+  employee: EmployeeData,
+  bonAmount: number,
+  period: number,
+  existingBons: ExistingBon[],
+  rules: BonRules = defaultBonRules
+): { valid: boolean; errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Check eligibility first
+  const eligibility = getBonEligibilityStatus(employee, existingBons, rules);
+  if (!eligibility.eligible) {
+    errors.push(eligibility.reason || 'Tidak memenuhi syarat untuk bon');
+  }
+  
+  // Check amount
+  if (bonAmount > eligibility.maxAmount) {
+    errors.push(`Jumlah bon melebihi batas maksimal: ${eligibility.maxAmount}`);
+  }
+  
+  if (bonAmount <= 0) {
+    errors.push('Jumlah bon harus lebih dari 0');
+  }
+  
+  // Check period
+  if (period <= 0 || period > rules.max_installment_periods) {
+    errors.push(`Periode cicilan harus antara 1-${rules.max_installment_periods} bulan`);
+  }
+  
+  // Check monthly payment affordability
+  const monthlyPayment = calculateMonthlyInstallment(bonAmount, period, rules);
+  const monthlyIncome = employee.gaji_pokok + employee.tunjangan;
+  const maxAffordablePayment = monthlyIncome * 0.4;
+  
+  if (monthlyPayment > maxAffordablePayment) {
+    warnings.push(`Cicilan bulanan (${monthlyPayment}) melebihi 40% dari gaji bulanan`);
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings
+  };
+}
