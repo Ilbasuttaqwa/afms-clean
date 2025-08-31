@@ -1,132 +1,156 @@
-# AFMS - Sistem Manajemen Absensi Fingerprint
+# AFMS - Attendance & Fingerprint Management System
 
-## 🚀 **Status Project**
+Sistem manajemen kehadiran dan fingerprint yang modern dengan backend Laravel dan frontend Next.js.
 
-Project ini sudah berhasil di-restructure dan dibersihkan dari git merge conflicts. Semua file sudah di-organize dengan baik.
-
-## 📁 **Struktur Project**
+## 🏗️ Struktur Project
 
 ```
 afms-clean/
-├── laravel/          # Backend Laravel API
-├── nextjs/           # Frontend Next.js
-├── docker/           # Docker configuration
-├── nginx/            # Nginx configuration
-└── database/         # Database schema
+├── laravel-api/          # Backend Laravel API
+├── components/           # Komponen React UI
+├── pages/               # Halaman Next.js
+├── styles/              # CSS dan TailwindCSS
+├── lib/                 # Utility functions
+└── types/               # TypeScript types
 ```
 
-## 🔧 **Setup dan Installation**
+## 🚀 Setup Development
 
-### **Prerequisites:**
-- Docker & Docker Compose
-- Node.js 18+ (untuk development)
-- PHP 8.1+ (untuk development)
+### 1. Backend Laravel
 
-### **1. Clone Repository:**
 ```bash
-git clone https://github.com/Ilbasuttaqwa/afms-clean.git
-cd afms-clean
-```
+cd laravel-api
 
-### **2. Jalankan dengan Docker:**
-```bash
-# Development environment
-docker-compose -f docker-compose.local.yml up -d
-
-# Production environment
-docker-compose up -d
-```
-
-### **3. Development Mode (tanpa Docker):**
-
-#### **Laravel Backend:**
-```bash
-cd laravel
+# Install dependencies
 composer install
-cp env.local .env
+
+# Copy .env.example ke .env dan sesuaikan konfigurasi database
+cp .env.example .env
+
+# Generate application key
 php artisan key:generate
-php artisan migrate
+
+# Konfigurasi database PostgreSQL di .env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=afms_db
+DB_USERNAME=postgres
+DB_PASSWORD=password
+
+# Jalankan migration dan seeder
+php artisan migrate:fresh --seed
+
+# Jalankan server
 php artisan serve
 ```
 
-#### **Next.js Frontend:**
+### 2. Frontend Next.js
+
 ```bash
-cd nextjs
+# Install dependencies
 npm install
+
+# Jalankan development server
 npm run dev
 ```
 
-## 🌐 **Access URLs**
+## 🗄️ Database PostgreSQL
 
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **Database:** localhost:3306 (MySQL)
+Pastikan PostgreSQL sudah terinstall dan running:
 
-## 📋 **Features**
-
-### **✅ Sudah Selesai:**
-- [x] Project structure cleanup
-- [x] Git merge conflicts resolution
-- [x] Docker configuration
-- [x] Tailwind CSS setup
-- [x] Icon component system
-- [x] Prisma database schema
-- [x] Authentication middleware
-- [x] API routes structure
-
-### **🔄 Dalam Progress:**
-- [ ] Laravel backend setup
-- [ ] Database migrations
-- [ ] API endpoints testing
-- [ ] Frontend components
-
-### **📝 TODO:**
-- [ ] Install Laravel dependencies
-- [ ] Setup database connection
-- [ ] Test API endpoints
-- [ ] Complete frontend components
-- [ ] Add authentication system
-- [ ] Implement fingerprint device integration
-
-## 🐛 **Known Issues**
-
-1. **Linter Errors:** Beberapa file memiliki linter errors karena missing dependencies
-2. **Dependencies:** Laravel dan Next.js dependencies belum di-install
-3. **Database:** Connection dan migrations belum di-setup
-
-## 🔧 **Troubleshooting**
-
-### **Docker Issues:**
 ```bash
-# Restart Docker Desktop
-# Clear Docker cache
-docker system prune -a
+# Buat database
+createdb afms_db
 
-# Check container status
-docker-compose ps
+# Atau via psql
+psql -U postgres
+CREATE DATABASE afms_db;
 ```
 
-### **Port Conflicts:**
-```bash
-# Check port usage
-netstat -ano | findstr :3306
-netstat -ano | findstr :8000
-netstat -ano | findstr :3000
+## 🔧 Konfigurasi
 
-# Kill process using port
-taskkill /PID <PID> /F
+### Laravel (.env)
+```env
+APP_NAME="AFMS - Attendance & Fingerprint Management System"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=afms_db
+DB_USERNAME=postgres
+DB_PASSWORD=password
+
+SANCTUM_STATEFUL_DOMAINS=localhost:3000
+SESSION_DOMAIN=localhost
 ```
 
-## 📞 **Support**
+### Next.js
+- API endpoint: `http://localhost:8000/api`
+- Port: `3000`
 
-Untuk bantuan lebih lanjut, silakan buat issue di repository ini.
+## 📱 Fitur
 
-## 📄 **License**
+- ✅ Dashboard modern dengan TailwindCSS
+- ✅ Autentikasi Laravel Sanctum
+- ✅ Manajemen karyawan
+- ✅ Monitoring perangkat fingerprint
+- ✅ Sistem payroll
+- ✅ Laporan kehadiran
+- ✅ Responsive design
 
-Project ini menggunakan license proprietary. Semua hak cipta dilindungi.
+## 🛠️ Tech Stack
 
----
+### Backend
+- Laravel 10
+- PostgreSQL
+- Laravel Sanctum
+- PHP 8.1+
 
-**Last Updated:** December 2024
-**Version:** 1.0.0
-**Status:** Development
+### Frontend
+- Next.js 14
+- React 18
+- TypeScript
+- TailwindCSS
+- Heroicons
+
+## 🚀 Deployment
+
+### Laravel
+```bash
+# Production
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### Next.js
+```bash
+# Build production
+npm run build
+
+# Start production
+npm start
+```
+
+## 📝 Catatan
+
+- Pastikan PostgreSQL extension `pgsql` terinstall di PHP
+- Gunakan Laravel Sanctum untuk autentikasi API
+- Frontend menggunakan proxy ke backend Laravel
+- Semua komponen UI menggunakan TailwindCSS
+
+## 🤝 Kontribusi
+
+1. Fork project
+2. Buat feature branch
+3. Commit changes
+4. Push ke branch
+5. Buat Pull Request
+
+## 📄 License
+
+MIT License
